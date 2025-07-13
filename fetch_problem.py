@@ -11,24 +11,38 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 
-def fetch_problem(problem_num):
-    """指定された問題番号の問題文を取得してCファイルを生成"""
+def fetch_problem(problem_num, silent=False):
+    """指定された問題番号の問題文を取得してCファイルを生成
+    
+    Args:
+        problem_num: 問題番号（文字列）
+        silent: Trueの場合、詳細な出力を抑制
+    
+    Returns:
+        "success": 成功
+        "exists": ファイル既存
+        "not_found": 問題が見つからない
+        "network_error": ネットワークエラー
+        "error": その他のエラー
+    """
     
     # ファイル名生成 (3桁ゼロパディング)
     filename = f"problem{int(problem_num):03d}.c"
     
     # ファイル存在チェック
     if os.path.exists(filename):
-        print("File already exists.")
-        return False
+        if not silent:
+            print("File already exists.")
+        return "exists"
     
     # URL構築
     base_url = "http://odz.sakura.ne.jp/projecteuler/index.php"
     page_param = f"Problem {problem_num}"
     url = f"{base_url}?cmd=read&page={quote(page_param)}"
     
-    print(f"Fetching problem {problem_num}...")
-    print(f"URL: {url}")
+    if not silent:
+        print(f"Fetching problem {problem_num}...")
+        print(f"URL: {url}")
     
     try:
         # 1秒待機 (サーバー負荷軽減)
@@ -58,18 +72,25 @@ def fetch_problem(problem_num):
         problem_text = body_element.get_text()
         problem_lines = [line.strip() for line in problem_text.split('\n') if line.strip()]
         
+        # 問題が存在するかチェック（簡易）
+        if len(problem_lines) < 5 or 'Problem' not in problem_text:
+            return "not_found"
+        
         # Cファイル生成
         generate_c_file(filename, problem_num, problem_lines, url)
         
-        print(f"Created {filename}")
-        return True
+        if not silent:
+            print(f"Created {filename}")
+        return "success"
         
     except requests.exceptions.RequestException as e:
-        print(f"Network error: {e}")
-        return False
+        if not silent:
+            print(f"Network error: {e}")
+        return "network_error"
     except Exception as e:
-        print(f"Error: {e}")
-        return False
+        if not silent:
+            print(f"Error: {e}")
+        return "error"
 
 def generate_c_file(filename, problem_num, problem_lines, source_url):
     """Cファイルのテンプレートを生成"""
@@ -141,12 +162,7 @@ def fetch_all_problems(start=1, end=885):
     error_count = 0
     
     # robots.txt確認 (初回のみ)
-    if not os.path.exists(".robots_checked"):
-        print("Checking robots.txt...")
-        check_robots_txt()
-        with open(".robots_checked", "w") as f:
-            f.write("checked")
-        print()
+    ensure_robots_checked()
     
     for problem_num in range(start, end + 1):
         filename = f"problem{problem_num:03d}.c"
@@ -159,56 +175,24 @@ def fetch_all_problems(start=1, end=885):
         
         print(f"Problem {problem_num:3d}: ", end="", flush=True)
         
-        try:
-            # URL構築
-            base_url = "http://odz.sakura.ne.jp/projecteuler/index.php"
-            page_param = f"Problem {problem_num}"
-            url = f"{base_url}?cmd=read&page={quote(page_param)}"
-            
-            # サーバー負荷軽減のため少し待機
-            time.sleep(1.5)
-            
-            # HTTP GET リクエスト
-            headers = {
-                'User-Agent': 'Project-Euler-Fetcher/1.0 (Educational Use)'
-            }
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            response.encoding = 'utf-8'
-            
-            # HTML解析
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # body要素から問題文を抽出
-            body_element = soup.find('div', {'id': 'body'}) or soup.find('div', {'class': 'body'})
-            
-            if not body_element:
-                # フォールバック: より広範囲で検索
-                body_element = soup.find('body')
-                if not body_element:
-                    raise ValueError("Could not find problem content")
-            
-            # テキスト抽出
-            problem_text = body_element.get_text()
-            problem_lines = [line.strip() for line in problem_text.split('\n') if line.strip()]
-            
-            # 問題が存在するかチェック（簡易）
-            if len(problem_lines) < 5 or 'Problem' not in problem_text:
-                print("Not found (likely missing problem)")
-                skip_count += 1
-                continue
-            
-            # Cファイル生成
-            generate_c_file(filename, problem_num, problem_lines, url)
+        # fetch_problem()を呼び出し（silent=Trueで出力抑制）
+        result = fetch_problem(str(problem_num), silent=True)
+        
+        if result == "success":
             print("✓ Success")
             success_count += 1
-            
-        except requests.exceptions.RequestException:
+        elif result == "not_found":
+            print("Not found (likely missing problem)")
+            skip_count += 1
+        elif result == "network_error":
             print("✗ Network error")
             error_count += 1
-        except Exception as e:
-            print(f"✗ Error: {str(e)[:50]}")
+        else:  # other error
+            print(f"✗ Error")
             error_count += 1
+        
+        # 一括取得時は少し長めの間隔
+        time.sleep(0.5)
     
     # 結果レポート
     print(f"\n{'='*50}")
@@ -218,6 +202,15 @@ def fetch_all_problems(start=1, end=885):
     print(f"Errors:  {error_count}")
     print(f"Total:   {success_count + skip_count + error_count}")
     print(f"{'='*50}")
+
+def ensure_robots_checked():
+    """robots.txt確認（共通処理）"""
+    if not os.path.exists(".robots_checked"):
+        print("Checking robots.txt...")
+        check_robots_txt()
+        with open(".robots_checked", "w") as f:
+            f.write("checked")
+        print()
 
 def main():
     """メイン関数"""
@@ -275,23 +268,21 @@ def main():
             sys.exit(1)
         
         # robots.txt確認 (初回のみ)
-        if not os.path.exists(".robots_checked"):
-            print("Checking robots.txt...")
-            check_robots_txt()
-            with open(".robots_checked", "w") as f:
-                f.write("checked")
-            print()
+        ensure_robots_checked()
         
         # 問題取得
-        success = fetch_problem(command)
+        result = fetch_problem(command)
         
-        if success:
+        if result == "success":
             filename = f"problem{problem_int:03d}.c"
             print(f"\nNext steps:")
             print(f"1. Edit {filename} to implement your solution")
             print(f"2. Compile: gcc -o problem{problem_int:03d} {filename} -lm")
             print(f"3. Run: ./problem{problem_int:03d}")
+        elif result == "exists":
+            print("File already exists. Skipping...")
         else:
+            print("Failed to fetch problem.")
             sys.exit(1)
 
 if __name__ == "__main__":

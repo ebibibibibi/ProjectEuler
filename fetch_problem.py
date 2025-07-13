@@ -130,24 +130,15 @@ def check_robots_txt():
     except:
         print("Could not check robots.txt - proceeding...")
 
-def main():
-    """メイン関数"""
-    if len(sys.argv) < 2:
-        print("Usage: python3 fetch_problem.py <problem_number>")
-        print("Example: python3 fetch_problem.py 19")
-        sys.exit(1)
+def fetch_all_problems(start=1, end=885):
+    """指定範囲の全問題を一括取得"""
     
-    problem_num = sys.argv[1]
+    print(f"Fetching Project Euler problems {start}-{end}...")
+    print("This may take a while. Press Ctrl+C to cancel.\n")
     
-    # 問題番号の妥当性チェック
-    try:
-        problem_int = int(problem_num)
-        if problem_int < 1 or problem_int > 999:
-            print("Problem number should be between 1 and 999")
-            sys.exit(1)
-    except ValueError:
-        print("Invalid problem number")
-        sys.exit(1)
+    success_count = 0
+    skip_count = 0
+    error_count = 0
     
     # robots.txt確認 (初回のみ)
     if not os.path.exists(".robots_checked"):
@@ -157,17 +148,151 @@ def main():
             f.write("checked")
         print()
     
-    # 問題取得
-    success = fetch_problem(problem_num)
+    for problem_num in range(start, end + 1):
+        filename = f"problem{problem_num:03d}.c"
+        
+        # 既存ファイルはスキップ
+        if os.path.exists(filename):
+            print(f"Problem {problem_num:3d}: Already exists, skipping")
+            skip_count += 1
+            continue
+        
+        print(f"Problem {problem_num:3d}: ", end="", flush=True)
+        
+        try:
+            # URL構築
+            base_url = "http://odz.sakura.ne.jp/projecteuler/index.php"
+            page_param = f"Problem {problem_num}"
+            url = f"{base_url}?cmd=read&page={quote(page_param)}"
+            
+            # サーバー負荷軽減のため少し待機
+            time.sleep(1.5)
+            
+            # HTTP GET リクエスト
+            headers = {
+                'User-Agent': 'Project-Euler-Fetcher/1.0 (Educational Use)'
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            
+            # HTML解析
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # body要素から問題文を抽出
+            body_element = soup.find('div', {'id': 'body'}) or soup.find('div', {'class': 'body'})
+            
+            if not body_element:
+                # フォールバック: より広範囲で検索
+                body_element = soup.find('body')
+                if not body_element:
+                    raise ValueError("Could not find problem content")
+            
+            # テキスト抽出
+            problem_text = body_element.get_text()
+            problem_lines = [line.strip() for line in problem_text.split('\n') if line.strip()]
+            
+            # 問題が存在するかチェック（簡易）
+            if len(problem_lines) < 5 or 'Problem' not in problem_text:
+                print("Not found (likely missing problem)")
+                skip_count += 1
+                continue
+            
+            # Cファイル生成
+            generate_c_file(filename, problem_num, problem_lines, url)
+            print("✓ Success")
+            success_count += 1
+            
+        except requests.exceptions.RequestException:
+            print("✗ Network error")
+            error_count += 1
+        except Exception as e:
+            print(f"✗ Error: {str(e)[:50]}")
+            error_count += 1
     
-    if success:
-        filename = f"problem{problem_int:03d}.c"
-        print(f"\nNext steps:")
-        print(f"1. Edit {filename} to implement your solution")
-        print(f"2. Compile: gcc -o problem{problem_int:03d} {filename} -lm")
-        print(f"3. Run: ./problem{problem_int:03d}")
-    else:
+    # 結果レポート
+    print(f"\n{'='*50}")
+    print(f"Fetch completed!")
+    print(f"Success: {success_count}")
+    print(f"Skipped: {skip_count}")
+    print(f"Errors:  {error_count}")
+    print(f"Total:   {success_count + skip_count + error_count}")
+    print(f"{'='*50}")
+
+def main():
+    """メイン関数"""
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  python3 fetch_problem.py <problem_number>     # Single problem")
+        print("  python3 fetch_problem.py all                 # All problems (1-885)")
+        print("  python3 fetch_problem.py range <start> <end> # Range of problems")
+        print("\nExamples:")
+        print("  python3 fetch_problem.py 19")
+        print("  python3 fetch_problem.py all")
+        print("  python3 fetch_problem.py range 1 50")
         sys.exit(1)
+    
+    command = sys.argv[1].lower()
+    
+    if command == "all":
+        # 全問題取得
+        try:
+            fetch_all_problems(1, 885)
+        except KeyboardInterrupt:
+            print("\n\nOperation cancelled by user")
+            sys.exit(1)
+    
+    elif command == "range":
+        # 範囲指定
+        if len(sys.argv) != 4:
+            print("Range command requires start and end numbers")
+            print("Example: python3 fetch_problem.py range 1 50")
+            sys.exit(1)
+        
+        try:
+            start = int(sys.argv[2])
+            end = int(sys.argv[3])
+            if start < 1 or end > 999 or start > end:
+                print("Invalid range. Start and end should be between 1-999, start <= end")
+                sys.exit(1)
+            fetch_all_problems(start, end)
+        except ValueError:
+            print("Start and end must be numbers")
+            sys.exit(1)
+        except KeyboardInterrupt:
+            print("\n\nOperation cancelled by user")
+            sys.exit(1)
+    
+    else:
+        # 単一問題取得（従来の動作）
+        try:
+            problem_int = int(command)
+            if problem_int < 1 or problem_int > 999:
+                print("Problem number should be between 1 and 999")
+                sys.exit(1)
+        except ValueError:
+            print("Invalid problem number")
+            sys.exit(1)
+        
+        # robots.txt確認 (初回のみ)
+        if not os.path.exists(".robots_checked"):
+            print("Checking robots.txt...")
+            check_robots_txt()
+            with open(".robots_checked", "w") as f:
+                f.write("checked")
+            print()
+        
+        # 問題取得
+        success = fetch_problem(command)
+        
+        if success:
+            filename = f"problem{problem_int:03d}.c"
+            print(f"\nNext steps:")
+            print(f"1. Edit {filename} to implement your solution")
+            print(f"2. Compile: gcc -o problem{problem_int:03d} {filename} -lm")
+            print(f"3. Run: ./problem{problem_int:03d}")
+        else:
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

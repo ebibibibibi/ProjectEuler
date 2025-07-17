@@ -22,3 +22,25 @@ int main() {
     
     return 0;
 }
+
+int solve_mathematical(int limit) {
+ // 指定された除数の偶数の合計を求める関数
+ int sum_of_mulitiples(int divisor) {
+    int count = (limit - 1) / divisor;
+    return divisor * count * (count + 1) / 2;
+ }
+
+  return sum_of_multiples(3) +
+         sum_of_mulitiples(5) -
+         sum_of_mulitiples(15);
+}
+
+int solve_brute_force(int limit) {
+    int sum = 0;
+    for (int i = 1; i < limit; i++) {
+        if (i % 3 == 0 || i % 5 == 0) {
+            sum += i;
+        }
+    }
+    return sum;
+}

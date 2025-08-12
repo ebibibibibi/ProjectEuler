@@ -85,24 +85,28 @@ func solveBruteForce(_ numRows: Int, _ numCols: Int, _ sequenceLength: Int) -> I
 // solveBruteForce(numRows, numCols, sequenceLength)
 
 // MARK: - 関数型っぽ実装
+// MARK: - 関数型っぽ実装
 func solveFunctional(_ numRows: Int, _ numCols: Int, _ sequenceLength: Int) -> Int {
     // 方向ベクトル: 右、下、右下斜め、左下斜め
     let directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
     
-    let products = (0..<numRows).flatMap { row in
+    let products: [Int] = (0..<numRows).flatMap { row in
         (0..<numCols).flatMap { col in
             directions.compactMap { (dr, dc) -> Int? in  // 戻り値の型を明示
                 let positions: [(Int, Int)] = (0..<sequenceLength).map { i in
-                (row + i * dr, col + i * dc)
-                // print("(row\(row) + i\(i) * dr\(dr), col\(col) + i\(i) * dc\(dc)) = \(row + i * dr, col + i * dc)")
+                return (row + i * dr, col + i * dc)
                 }
+                (0..<numRows).map { row in print("row = \(row)") }
                 print("positions = \(positions)")
                 // 境界チェック
                 guard positions.allSatisfy({ (r, c) in r >= 0 && r < numRows && c >= 0 && c < numCols }) else {
                     return nil
                 }
-                
-                return positions.map { grid[$0.0][$0.1] }.reduce(1, *)
+                return positions.map {
+                    print("grid[$0.0][$0.1] = \(grid[$0.0][$0.1])")
+                    print("$0 = \($0)")
+                    return grid[$0.0][$0.1]
+                }.reduce(1, *)
             }
         }
     }

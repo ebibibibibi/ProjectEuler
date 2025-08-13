@@ -85,7 +85,6 @@ func solveBruteForce(_ numRows: Int, _ numCols: Int, _ sequenceLength: Int) -> I
 // solveBruteForce(numRows, numCols, sequenceLength)
 
 // MARK: - 関数型っぽ実装
-// MARK: - 関数型っぽ実装
 func solveFunctional(_ numRows: Int, _ numCols: Int, _ sequenceLength: Int) -> Int {
     // 方向ベクトル: 右、下、右下斜め、左下斜め
     let directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
@@ -115,4 +114,6 @@ func solveFunctional(_ numRows: Int, _ numCols: Int, _ sequenceLength: Int) -> I
 }
 
 // 呼び出し
-print(solveFunctional(numRows, numCols, sequenceLength))
+// print(solveFunctional(numRows, numCols, sequenceLength))
+
+

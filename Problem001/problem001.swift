@@ -14,22 +14,21 @@ import Foundation
 func solveBruteForce(limit: Int) -> Int {
     var sum = 0
 
-    for i in 1..<limit {
+    for i in 1<limit {
         if i % 3 == 0 || i % 5 == 0 {
             sum += i
         }
-    }
+    }    
 
     return sum
 }
-
 print(solveBruteForce(limit: 1000))
 
 // MARK: - 関数型アプローチ
-func solveFunctional(limit: Int = 1000) -> Int {
+func solveFunctional(limit: Int) -> Int {
     return (1..<limit)
-        .filter { $0 % 3 == 0 || $0 % 5 == 0 }
-        .reduce(0, +)
+    .filter { $0 % 3 == 0 || $0 % 5 == 0}
+    .reduce(0, +)
 }
 
 // MARK: - 数学的解法（効率的）

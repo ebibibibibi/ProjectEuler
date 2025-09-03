@@ -23,3 +23,18 @@ func solveBruteForce(_ limit: Int) -> Int {
     }
     return sum
 }
+
+// MARK: - 数学的解法
+func sumEvenFibs(upto limit: Int) -> Int {
+    var e1 = 2
+    var e2 = 8
+    var sum = 0
+
+    while e1 <= limit {
+        sum += e1
+        let e3 = 4 * e2 + e1
+        e1 = e2
+        e2 = e3
+    }
+    return sum
+}

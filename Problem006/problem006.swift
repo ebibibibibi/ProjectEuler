@@ -48,6 +48,14 @@ func differenceFunctional(upTo n: Int) -> Int {
 print(differenceBruteForce(upTo: 100))
 print(differenceFunctional(upTo: 100))
 
+// MARK: - ヘルパー拡張
+extension Int {
+    /// 自分自身の二乗を返す
+    var squared: Int {
+        return self * self
+    }
+}
+
 // 数学的なアプローチ
 func differenceMathematical(upTo n: Int) -> Int {
     // 1 + 2 + ... + n = n(n+1)/2
@@ -57,13 +65,4 @@ func differenceMathematical(upTo n: Int) -> Int {
     let sumOfSquaresFormula = n * (n + 1) * (2 * n + 1) / 6
     
     return sumFormula * sumFormula - sumOfSquaresFormula
-}
-
-
-// MARK: - ヘルパー拡張
-extension Int {
-    /// 自分自身の二乗を返す
-    var squared: Int {
-        return self * self
-    }
 }

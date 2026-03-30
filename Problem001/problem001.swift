@@ -13,13 +13,11 @@ import Foundation
 // MARK: 愚直実装
 func solveBruteForce(limit: Int) -> Int {
     var sum = 0
-
-    for i in 1<limit {
+    for i in 1..<limit {
         if i % 3 == 0 || i % 5 == 0 {
             sum += i
         }
     }    
-
     return sum
 }
 print(solveBruteForce(limit: 1000))

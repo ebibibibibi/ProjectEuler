@@ -28,3 +28,43 @@ array[3] → orange → 空
 - 二分探索木の平衡を保つことで、O(log(n))の検索時間を保証することができる
 - 最初に大きな配列を割り当てる必要もなく、メモリにやさしい
 
+## 配列リスト（可変長配列）
+- 配列リスト（可変長配列）は計算量O(1)でのアクセスを備えつつ、自身のサイズを必要に応じて変更できる配列
+- 一般的な実装は、配列がいっぱいになったときサイズを2倍にするというもの
+- サイズを増やす処理自体はO(n)の計算量
+- とはいえ、サイズを増やす処理はほぼ発生しない
+```java
+public ArrayList<String> merge(String[] words, String[] more() {
+    ArrayList<String> sentence = new ArrayList<String>();
+    for (String w : words) sentence.add(w);
+    for (String w: more) sentence.add(w);
+    return sentence;
+}
+```
+## 文字列バッファ
+- 文字列のリストを連結することをイメージする
+```java
+public String joinWords(String[] words) {
+    String sentence = "";
+    for (String w : words) {
+        sentence = sentence + w; 
+    }
+    return sentence;
+}
+```
+最初の繰り返し処理でx文字分の繰り返しを要求される。
+二回目の繰り返しで2x文字分のコピーが必要になる。
+最終的に O(x + 2x + ... + nx) で、O(xn^2)の計算量になる。
+StringBuffer はこの問題を解決する。
+連結後の文字列を保持する配列を１つ作って、必要に応じて文字列の後ろにコピーしていくだけ。
+
+文字列や配列と仲良くなるには、自分自身でStringBufferを実装してみるのが良い
+```java
+public String joinWords(String[] words) {
+    SringBuffer sentence = new StringBuffer();
+    for (String w : words) {
+        sentence.append(w);
+    }
+    return sentence.toStrong();
+}
+```
